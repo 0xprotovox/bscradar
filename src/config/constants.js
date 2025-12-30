@@ -1,0 +1,114 @@
+// src/config/constants.js
+// BscRadar - BSC Pool Analyzer Constants
+
+const CONTRACTS = {
+  // Core tokens on BSC
+  WBNB: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c',
+  USDC: '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d',
+  USDT: '0x55d398326f99059fF775485246999027B3197955',
+  DAI: '0x1AF3F329e8BE154074D8769D1FFa4eE058B1DBc3',
+  BUSD: '0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56',
+  CAKE: '0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82',
+
+  // PancakeSwap V2
+  PANCAKESWAP_V2_FACTORY: '0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73',
+  PANCAKESWAP_V2_ROUTER: '0x10ED43C718714eb63d5aA57B78B93856F9828e02',
+
+  // PancakeSwap V3
+  PANCAKESWAP_V3_FACTORY: '0x0BFbCF9fa4f9C56B0F40a671Ad40E0805A091865',
+  PANCAKESWAP_V3_ROUTER: '0x13f4EA83D0bd40E75C8222255bc855a974568Dd4',
+  PANCAKESWAP_V3_QUOTER_V2: '0xB048Bbc1Ee6b733FFfCFb9e9CeF7375518e25997',
+  PANCAKESWAP_V3_NFT_POSITION_MANAGER: '0x46A15B0b27311cedF172AB29E4f4766fbE7F4364',
+
+  // Multicall for batch queries
+  MULTICALL3: '0xcA11bde05977b3631167028862bE2a173976CA11',
+};
+
+const FEE_TIERS = {
+  V3: [100, 500, 2500, 3000, 10000], // 0.01%, 0.05%, 0.25%, 0.3%, 1%
+  V2: 2500, // 0.25% fixed
+};
+
+const COMMON_BASE_PAIRS = [
+  CONTRACTS.WBNB,
+  CONTRACTS.USDC,
+  CONTRACTS.USDT,
+  CONTRACTS.BUSD,
+  CONTRACTS.DAI,
+];
+
+const NETWORK = {
+  CHAIN_ID: 56,
+  NAME: 'BSC',
+  FULL_NAME: 'BNB Smart Chain',
+  SYMBOL: 'BNB',
+  EXPLORER: 'https://bscscan.com',
+  RPC_URLS: {
+    PUBLIC: 'https://bsc-dataseed.binance.org',
+    BACKUP: 'https://bsc-dataseed1.defibit.io',
+    CUSTOM: process.env.BSC_RPC,
+  },
+};
+
+const POOL_INIT_CODE_HASH = {
+  V2: '0x00fb7f630766e6a796048ea87d01acd3068e8ff67d078148a3fa3f4a84f69bd5',
+  V3: '0x6ce8eb472fa82df5469c6ab6d485f17c3ad13c8cd7af59b3d4a8026c5ce0f7e2',
+};
+
+const LIQUIDITY_THRESHOLDS = {
+  MIN_LIQUIDITY_USD: 1000,
+  MIN_LIQUIDITY_BNB: 0.1,
+  HIGH_LIQUIDITY_USD: 100000,
+  WARNING_LIQUIDITY_USD: 5000,
+};
+
+// Default prices (fallback when oracle unavailable)
+const DEFAULT_PRICES = {
+  BNB: parseFloat(process.env.DEFAULT_BNB_PRICE) || 700,
+  USDC: 1,
+  USDT: 1,
+  BUSD: 1,
+  DAI: 1,
+};
+
+// Known token prices for bootstrapping (USD)
+const KNOWN_TOKEN_PRICES = {
+  [CONTRACTS.WBNB.toLowerCase()]: DEFAULT_PRICES.BNB,
+  [CONTRACTS.USDC.toLowerCase()]: 1,
+  [CONTRACTS.USDT.toLowerCase()]: 1,
+  [CONTRACTS.BUSD.toLowerCase()]: 1,
+  [CONTRACTS.DAI.toLowerCase()]: 1,
+  [CONTRACTS.CAKE.toLowerCase()]: 2.5, // Approximate CAKE price
+};
+
+const API_CONFIG = {
+  PORT: process.env.PORT || 3000,
+  CACHE_TTL: parseInt(process.env.CACHE_TTL) || 300,
+  PRICE_CACHE_TTL: parseInt(process.env.PRICE_CACHE_TTL) || 30,
+  MAX_RETRIES: 3,
+  RETRY_DELAY: 1000,
+  REQUEST_TIMEOUT: 30000,
+  RATE_LIMIT_WINDOW: parseInt(process.env.RATE_LIMIT_WINDOW) || 60000,
+  RATE_LIMIT_MAX_REQUESTS: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
+};
+
+// Cache TTL settings (in seconds)
+const CACHE_CONFIG = {
+  ANALYSIS_TTL: parseInt(process.env.CACHE_TTL) || 300,
+  PRICE_TTL: parseInt(process.env.PRICE_CACHE_TTL) || 30,
+  TOKEN_INFO_TTL: 3600, // 1 hour for token metadata
+  POOL_DATA_TTL: 60, // 1 minute for pool data
+};
+
+module.exports = {
+  CONTRACTS,
+  FEE_TIERS,
+  COMMON_BASE_PAIRS,
+  NETWORK,
+  POOL_INIT_CODE_HASH,
+  LIQUIDITY_THRESHOLDS,
+  DEFAULT_PRICES,
+  KNOWN_TOKEN_PRICES,
+  API_CONFIG,
+  CACHE_CONFIG,
+};

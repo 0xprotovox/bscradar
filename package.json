@@ -1,0 +1,60 @@
+{
+  "name": "bscradar",
+  "version": "1.0.0",
+  "description": "High-performance, stateless DEX pool analyzer API for BSC network. Real-time pool discovery, liquidity analysis, and swap routing for PancakeSwap V2/V3.",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "test": "jest",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "format": "prettier --write \"src/**/*.js\"",
+    "format:check": "prettier --check \"src/**/*.js\""
+  },
+  "keywords": [
+    "bsc",
+    "binance-smart-chain",
+    "pancakeswap",
+    "defi",
+    "pool-analyzer",
+    "liquidity",
+    "dex",
+    "api",
+    "microservice",
+    "web3",
+    "blockchain"
+  ],
+  "author": "0xprotovox",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/0xprotovox/bscradar.git"
+  },
+  "bugs": {
+    "url": "https://github.com/0xprotovox/bscradar/issues"
+  },
+  "homepage": "https://github.com/0xprotovox/bscradar#readme",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "axios": "^1.6.2",
+    "compression": "^1.7.4",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "ethers": "^6.13.0",
+    "express": "^4.18.2",
+    "express-rate-limit": "^7.1.5",
+    "helmet": "^7.1.0",
+    "node-cache": "^5.1.2",
+    "winston": "^3.11.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.54.0",
+    "jest": "^29.7.0",
+    "nodemon": "^3.0.1",
+    "prettier": "^3.1.0"
+  }
+}
