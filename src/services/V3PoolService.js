@@ -24,6 +24,11 @@ class V3PoolService {
     this.tokenService = getTokenService();
     this.cache = getCacheService();
     this.logger = getLogger();
+
+    // V3 tick boundaries - pools at these extremes are rugged/empty
+    this.MAX_TICK = 887272;
+    this.MIN_TICK = -887272;
+    this.TICK_BOUNDARY_THRESHOLD = 100; // Consider rugged if within 100 ticks of boundary
   }
 
   async findAllPools(tokenAddress) {
@@ -39,11 +44,19 @@ class V3PoolService {
           const poolAddress = await this.getPoolAddress(tokenAddress, baseToken, feeTier);
           if (poolAddress && poolAddress !== ethers.ZeroAddress) {
             const poolData = await this.getPoolData(poolAddress);
-            if (poolData && poolData.liquidity.status === 'ACTIVE') {
+            if (poolData) {
+              // Include all pools (even rugged) for transparency, but log status
+              const status = poolData.liquidity?.status || 'UNKNOWN';
+              if (status === 'RUGGED') {
+                this.logger.warn(
+                  `⚠️ Found RUGGED V3 pool: ${poolData.token0?.symbol}/${poolData.token1?.symbol} (${feeTier/10000}%)`
+                );
+              } else if (status === 'ACTIVE' || status === 'WARNING_LIQUIDITY') {
+                this.logger.info(
+                  `Found V3 pool: ${poolData.token0?.symbol}/${poolData.token1?.symbol} (${feeTier/10000}%) - ${status}`
+                );
+              }
               pools.push(poolData);
-              this.logger.info(
-                `Found V3 pool: ${poolData.token0.symbol}/${poolData.token1.symbol} (${feeTier/10000}%)`
-              );
             }
           }
         } catch (error) {
@@ -98,7 +111,53 @@ class V3PoolService {
 
         // Parse slot0 data
         const sqrtPriceX96 = slot0[0];
-        const tick = slot0[1];
+        const tick = Number(slot0[1]);
+
+        // ✅ RUGGED POOL DETECTION: Check for extreme tick values
+        const isTickAtBoundary = tick >= (this.MAX_TICK - this.TICK_BOUNDARY_THRESHOLD) ||
+                                  tick <= (this.MIN_TICK + this.TICK_BOUNDARY_THRESHOLD);
+        const isZeroLiquidity = liquidity === 0n || liquidity.toString() === '0';
+
+        if (isTickAtBoundary || isZeroLiquidity) {
+          this.logger.warn(`⚠️ V3 Pool ${poolAddress} appears RUGGED/EMPTY:`);
+          this.logger.warn(`   tick: ${tick} (boundary: ${isTickAtBoundary})`);
+          this.logger.warn(`   liquidity: ${liquidity.toString()} (zero: ${isZeroLiquidity})`);
+
+          // Return pool data with RUGGED status so it's excluded from recommendations
+          const [token0Info, token1Info] = await Promise.all([
+            this.tokenService.getTokenInfo(token0),
+            this.tokenService.getTokenInfo(token1),
+          ]);
+
+          return {
+            address: poolAddress.toLowerCase(),
+            type: 'V3',
+            version: 3,
+            token0: token0Info,
+            token1: token1Info,
+            fee: Number(fee),
+            feePercent: Number(fee) / 10000,
+            liquidity: {
+              status: 'RUGGED',
+              usd: 0,
+              bnb: 0,
+              token0: '0',
+              token1: '0',
+              raw: liquidity.toString(),
+            },
+            tick: tick,
+            sqrtPriceX96: sqrtPriceX96.toString(),
+            price: {
+              token0Price: 0,
+              token1Price: 0,
+              priceRatio: 0,
+              raw: 0,
+            },
+            isRugged: true,
+            rugReason: isZeroLiquidity ? 'Zero liquidity' : 'Tick at boundary (liquidity removed)',
+            lastUpdated: new Date().toISOString(),
+          };
+        }
 
         // CRITICAL: Calculate price correctly
         const priceData = this.calculateV3Price(

@@ -517,9 +517,33 @@ class PoolAnalyzer {
       enriched.fee = poolData.fee || poolInfo.fee || 2500; // PancakeSwap V3 common fee tier
       enriched.feePercent = enriched.fee / 10000; // fee is in basis points (2500 = 0.25%)
       enriched.sqrtPriceX96 = poolData.slot0?.sqrtPriceX96?.toString() || '0';
-      enriched.tick = poolData.slot0?.tick || 0;
+      enriched.tick = Number(poolData.slot0?.tick) || 0;
 
       const liquidityRaw = poolData.liquidity || 0n;
+
+      // ✅ V3 RUGGED POOL DETECTION: Check for extreme tick values or zero liquidity
+      const MAX_TICK = 887272;
+      const MIN_TICK = -887272;
+      const TICK_BOUNDARY_THRESHOLD = 100;
+      const tick = enriched.tick;
+      const isTickAtBoundary = tick >= (MAX_TICK - TICK_BOUNDARY_THRESHOLD) ||
+                                tick <= (MIN_TICK + TICK_BOUNDARY_THRESHOLD);
+      const isZeroLiquidity = !liquidityRaw || liquidityRaw === 0n || liquidityRaw.toString() === '0';
+
+      if (isTickAtBoundary || isZeroLiquidity) {
+        this.logger.warn(`⚠️ V3 Pool ${poolData.address} RUGGED: tick=${tick}, liquidity=${liquidityRaw}`);
+        enriched.isRugged = true;
+        enriched.rugReason = isZeroLiquidity ? 'Zero liquidity' : `Tick at boundary (${tick})`;
+        enriched.liquidity = {
+          raw: '0',
+          token0Amount: '0',
+          token1Amount: '0',
+          totalValueUSD: 0,
+          totalValueBNB: 0,
+          status: 'RUGGED',
+        };
+        return enriched;
+      }
 
       // Calculate approximate token amounts from V3 liquidity
       const { token0Amount, token1Amount, totalValueUSD, totalValueBNB } =
@@ -1407,6 +1431,20 @@ class PoolAnalyzer {
         'CRITICAL',
         `${ruggedPools.length} pool(s) appear to be rugged (pair token removed)`,
         'DANGER: These pools will take your funds but cannot give you tokens back. Avoid trading on them!'
+      );
+    }
+
+    // 4b. V3 RUGGED POOLS - Pools with extreme tick values or zero liquidity
+    const v3RuggedPools = formattedPools.filter(p =>
+      p.type === 'V3' && (p.isRugged === true || p.liquidity?.status === 'RUGGED')
+    );
+
+    if (v3RuggedPools.length > 0) {
+      addWarning(
+        'V3_RUGGED_POOLS',
+        'CRITICAL',
+        `${v3RuggedPools.length} V3 pool(s) have removed liquidity (tick at boundary)`,
+        'These pools show extreme tick values indicating all liquidity was withdrawn. Excluded from recommendations.'
       );
     }
 
